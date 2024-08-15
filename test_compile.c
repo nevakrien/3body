@@ -17,7 +17,8 @@ int main(void)
         BeginDrawing();
 
         ClearBackground(RAYWHITE);
-
+        DrawCircle(screenWidth/5, 120, 35, DARKBLUE);
+        
         DrawText("Congrats! You compiled and ran a Raylib program!", 190, 200, 20, LIGHTGRAY);
 
         EndDrawing();

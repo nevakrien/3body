@@ -1,5 +1,5 @@
 # Compiler
-CC = clang
+CLANG = clang
 
 # Platform-specific variables
 ifeq ($(OS),Windows_NT)
@@ -14,7 +14,7 @@ ifeq ($(OS),Windows_NT)
 else
     # Unix-like settings (Linux, macOS)
     VCPKG_PATH = /usr/local/vcpkg/packages/raylib_x64-linux
-    POSFIX =
+    POSFIX = .out
     DEL_CMD = rm -f
     PATH_SEP = :
     RUN_CMD = LD_LIBRARY_PATH=$(VCPKG_PATH)/lib$(PATH_SEP)$$LD_LIBRARY_PATH 
@@ -23,7 +23,7 @@ else
 endif
 
 # Paths
-RAYLIB_LIB = $(VCPKG_PATH)/lib/libraylib$(POSFIX)
+RAYLIB_LIB = $(VCPKG_PATH)/lib/raylib.lib
 RAYLIB_INCLUDE = $(VCPKG_PATH)/include
 
 # Flags
@@ -38,10 +38,17 @@ TARGETS = $(SRC_FILES:.c=$(POSFIX))
 all: $(TARGETS)
 
 %$(POSFIX): %.c
-	$(CC) $(CFLAGS) -o $@ $< $(RAYLIB_LIB) $(LDFLAGS)
+	$(CLANG) $(CFLAGS) -o $@ $< $(RAYLIB_LIB) $(LDFLAGS)
 
 # run: $(TARGETS)
 # 	$(RUN_CMD) $(foreach exe,$(TARGETS),$(RUN_PREFIX)$(exe) $(RUN_SEP) )
+
+run: main$(POSFIX)
+	$(RUN_CMD) $(RUN_PREFIX)main$(POSFIX)
+
+# Build rule for test_compile
+main$(POSFIX): main.ll
+	$(CLANG) $(CFLAGS) -o main$(POSFIX) main.ll $(RAYLIB_LIB) $(LDFLAGS)
 
 # Compile and run test_compile.c
 test_compile: test_compile$(POSFIX)
@@ -49,8 +56,11 @@ test_compile: test_compile$(POSFIX)
 
 # Build rule for test_compile
 test_compile$(POSFIX): test_compile.c
-	$(CC) $(CFLAGS) -o test_compile$(POSFIX) test_compile.c $(RAYLIB_LIB) $(LDFLAGS)
+	$(CLANG) $(CFLAGS) -o test_compile$(POSFIX) test_compile.c $(RAYLIB_LIB) $(LDFLAGS)
 
+# Build rule for test_compile
+test_compile.ll: test_compile.c
+	$(CLANG) $(CFLAGS) test_compile.c $(RAYLIB_LIB) -S -emit-llvm
 
 clean:
 	$(DEL_CMD) $(TARGETS)
