@@ -13,10 +13,12 @@ entry:
 loop:
   ; Loop index for accessing elements
   %index = phi i32 [ 0, %entry ], [ %next_index, %loop ]
+  %y_index = add i32 %index, 1
+  
 
   ; Get pointers to the current X and Y floats in the buffer
   %x_ptr = getelementptr inbounds [6 x float], [6 x float]* %buffer, i32 0, i32 %index
-  %y_ptr = getelementptr inbounds [6 x float], [6 x float]* %buffer, i32 0, i32 %next_index
+  %y_ptr = getelementptr inbounds [6 x float], [6 x float]* %buffer, i32 0, i32 %y_index
 
   ; Load the X and Y values
   %x_float = load float, float* %x_ptr, align 4
@@ -61,8 +63,8 @@ loop:
   %x_out_ptr = getelementptr inbounds [6 x float], [6 x float]* %out_buffer, i32 0, i32 %index
   %y_out_ptr = getelementptr inbounds [6 x float], [6 x float]* %out_buffer, i32 0, i32 %y_index
   
-  store float %x_val, float* %x_in_ptr, align 4
-  store float %y_val, float* %y_in_ptr, align 4
+  store float %x_val, float* %x_out_ptr, align 4
+  store float %y_val, float* %y_out_ptr, align 4
 
 
   %next_index = add i32 %index, 2

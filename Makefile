@@ -27,7 +27,7 @@ RAYLIB_LIB = $(VCPKG_PATH)/lib/raylib.lib
 RAYLIB_INCLUDE = $(VCPKG_PATH)/include
 
 # Flags
-CFLAGS = -I$(RAYLIB_INCLUDE) -O2 -fsantize=address -fsantize=undefined 
+CFLAGS = -I$(RAYLIB_INCLUDE) -O2 #-fsantize=address -fsantize=undefined 
 LDFLAGS = -L$(VCPKG_PATH)/lib -lraylib
 
 
