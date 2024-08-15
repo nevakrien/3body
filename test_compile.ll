@@ -56,7 +56,7 @@ define dso_local i32 @main() local_unnamed_addr #0 {
   call void @BeginMode2D(%struct.Camera2D* nonnull %1) #3
   call void @llvm.lifetime.end.p0i8(i64 24, i8* nonnull %4) #3
   %26 = sdiv i32 %12, 5
-  call void @DrawCircle(i32 %26, i32 120, float 3.500000e+01, i32 -5484032) #3
+  call void @DrawCircle(i32 %26, i32 120, float 3.500000e+01, i32 -13162010) #3
   call void @DrawText(i8* getelementptr inbounds ([49 x i8], [49 x i8]* @"??_C@_0DB@OHGHMPDI@Congrats?$CB?5You?5compiled?5and?5ran?5a@", i64 0, i64 0), i32 190, i32 200, i32 20, i32 -3618616) #3
   call void @EndMode2D() #3
   call void @EndDrawing() #3

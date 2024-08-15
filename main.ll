@@ -5,9 +5,98 @@ declare void @llvm.memset.p0i8.i64(i8*, i8, i64, i1)
 %struct.Camera2D = type { %struct.Vector2, %struct.Vector2, float, float }
 %struct.Vector2 = type { float, float }
 
+define internal void @DrawCirclesFromBuffer([6 x float]* %buffer, float %radius, float %screen_width_float, float %screen_height_float) alwaysinline {
+entry:
+  ; Initialize the loop
+  br label %loop
+
+loop:
+  ; Loop index for accessing elements
+  %index = phi i32 [ 0, %entry ], [ %next_index, %loop ]
+
+  ; Get pointers to the current X and Y floats in the buffer
+  %x_ptr = getelementptr inbounds [6 x float], [6 x float]* %buffer, i32 0, i32 %index
+  %y_ptr = getelementptr inbounds [6 x float], [6 x float]* %buffer, i32 0, i32 %next_index
+
+  ; Load the X and Y values
+  %x_float = load float, float* %x_ptr, align 4
+  %y_float = load float, float* %y_ptr, align 4
+
+  ; Convert the floats to integers for drawing
+  %x_int = fptosi float %x_float to i32
+  %y_int = fptosi float %y_float to i32
+
+  ; Draw the circle
+  call void @DrawCircle(i32 %x_int, i32 %y_int, float %radius, i32 -13162010) #2 ;5484032
+
+  ; Increment index by 2 to move to the next pair of floats
+  %next_index = add i32 %index, 2
+  ; Continue looping if more data remains
+  %continue = icmp slt i32 %next_index, 6
+  br i1 %continue, label %loop, label %exit
+
+exit:
+  ret void
+}
+
+define internal void @UpdateState([6 x float]* %in_buffer, [6 x float]* %out_buffer) alwaysinline {
+entry:
+  ; Initialize the loop
+  br label %loop
+
+loop:
+  ; Loop index for accessing elements
+  %index = phi i32 [ 0, %entry ], [ %next_index, %loop ]
+  %y_index = add i32 %index, 1
+
+  ; Get pointers to the current X and Y floats in the buffer
+  %x_in_ptr = getelementptr inbounds [6 x float], [6 x float]* %in_buffer, i32 0, i32 %index
+  %y_in_ptr = getelementptr inbounds [6 x float], [6 x float]* %in_buffer, i32 0, i32 %y_index
+
+  ; Load the X and Y values
+  %x_val = load float, float* %x_in_ptr, align 4
+  %y_val = load float, float* %y_in_ptr, align 4
+
+  ; Get pointers to the current X and Y floats in the buffer
+  %x_out_ptr = getelementptr inbounds [6 x float], [6 x float]* %out_buffer, i32 0, i32 %index
+  %y_out_ptr = getelementptr inbounds [6 x float], [6 x float]* %out_buffer, i32 0, i32 %y_index
+  
+  store float %x_val, float* %x_in_ptr, align 4
+  store float %y_val, float* %y_in_ptr, align 4
+
+
+  %next_index = add i32 %index, 2
+  ; Continue looping if more data remains
+  %continue = icmp slt i32 %next_index, 6
+  br i1 %continue, label %loop, label %exit
+
+exit:
+  ret void
+}
+
 ; Function Attrs: nounwind uwtable
 define dso_local i32 @main() local_unnamed_addr #0 {
 entry:
+  ;initilize base data
+  %work_buffer = alloca [6 x float] ,align 4
+  %bodies_data  = alloca [6 x float] ,align 4
+  
+  %ptr0 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 0
+  %ptr1 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 1
+  %ptr2 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 2
+  %ptr3 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 3
+  %ptr4 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 4
+  %ptr5 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 5
+  
+  store float 160.0, float* %ptr0
+  store float 160.0, float* %ptr1
+  store float 10.0, float* %ptr2
+  store float 4.0, float* %ptr3
+  store float 0.0, float* %ptr4
+  store float 0.0, float* %ptr5
+
+  
+
   ; Initialize camera
   %Cam = alloca %struct.Camera2D, align 4
   
@@ -31,20 +120,23 @@ entry:
 
   ;cordinates
   %XoffsetPtr = getelementptr inbounds %struct.Vector2, %struct.Vector2* %offsetPtr, i32 0, i32 0
-  store float 400.0, float* %XoffsetPtr, align 4
   %YoffsetPtr = getelementptr inbounds %struct.Vector2, %struct.Vector2* %offsetPtr, i32 0, i32 1
+  store float 400.0, float* %XoffsetPtr, align 4
   store float 225.0, float* %YoffsetPtr, align 4
 
 
   ; Initialize window
   tail call void @SetConfigFlags(i32 4) #2
   tail call void @InitWindow(i32 800, i32 450, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @window_name, i64 0, i64 0)) #2
-  tail call void @SetTargetFPS(i32 60) #2
+  tail call void @SetTargetFPS(i32 10) #2
   br label %main_loop
 
 main_loop:                                                ; preds = %0, %2
-  ; manage camera
+  ;set the buffers
+  %current_data = phi [6 x float]* [ %bodies_data, %entry ], [ %next_buffer, %main_loop ]
+  %next_buffer = phi [6 x float]* [ %work_buffer, %entry ], [ %current_data, %main_loop ]
 
+  ; manage camera
   %screen_width = tail call i32 @GetScreenWidth() #2
   %screen_height = tail call i32 @GetScreenHeight() #2
 
@@ -84,10 +176,6 @@ main_loop:                                                ; preds = %0, %2
         store float %NewY, float* %YoffsetPtr, align 4
 
 
-
-  ; Calculate circle properties based on screen dimensions
-  %circle_x = sdiv i32 %screen_width, 5
-  %circle_y = sdiv i32 %screen_height, 5
   %circle_radius = fdiv float %screen_width_float, 20.0
 
   tail call void @BeginDrawing() #2
@@ -95,12 +183,14 @@ main_loop:                                                ; preds = %0, %2
 
   call void @BeginMode2D(%struct.Camera2D* nonnull %Cam) #3
 
-
-  ; Draw circle with computed position and size
-  tail call void @DrawCircle(i32 %circle_x, i32 %circle_y, float %circle_radius, i32 -5484032) #2
+  
+  tail call void @DrawCirclesFromBuffer([6 x float]* %current_data, float %circle_radius, float %screen_width_float, float %screen_height_float)
 
   call void @EndMode2D() #3
   tail call void @EndDrawing() #2
+
+  tail call void @UpdateState([6 x float]* %current_data,[6 x float]* %next_buffer)
+
   %should_close = tail call zeroext i1 @WindowShouldClose() #2
   br i1 %should_close, label %exit, label %main_loop, !llvm.loop !3
 
