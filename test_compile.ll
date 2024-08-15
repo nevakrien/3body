@@ -12,30 +12,40 @@ $"??_C@_0DB@OHGHMPDI@Congrats?$CB?5You?5compiled?5and?5ran?5a@" = comdat any
 
 ; Function Attrs: nounwind uwtable
 define dso_local i32 @main() local_unnamed_addr #0 {
+  tail call void @SetConfigFlags(i32 4) #2
   tail call void @InitWindow(i32 800, i32 450, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @"??_C@_0M@HNJFIPLC@Raylib?5Test?$AA@", i64 0, i64 0)) #2
   tail call void @SetTargetFPS(i32 60) #2
   %1 = tail call zeroext i1 @WindowShouldClose() #2
-  br i1 %1, label %4, label %2
+  br i1 %1, label %7, label %2
 
 2:                                                ; preds = %0, %2
+  %3 = tail call i32 @GetScreenWidth() #2
+  %4 = tail call i32 @GetScreenHeight() #2
   tail call void @BeginDrawing() #2
   tail call void @ClearBackground(i32 -657931) #2
-  tail call void @DrawCircle(i32 160, i32 120, float 3.500000e+01, i32 -5484032) #2
+  %5 = sdiv i32 %3, 5
+  tail call void @DrawCircle(i32 %5, i32 120, float 3.500000e+01, i32 -5484032) #2
   tail call void @DrawText(i8* getelementptr inbounds ([49 x i8], [49 x i8]* @"??_C@_0DB@OHGHMPDI@Congrats?$CB?5You?5compiled?5and?5ran?5a@", i64 0, i64 0), i32 190, i32 200, i32 20, i32 -3618616) #2
   tail call void @EndDrawing() #2
-  %3 = tail call zeroext i1 @WindowShouldClose() #2
-  br i1 %3, label %4, label %2, !llvm.loop !3
+  %6 = tail call zeroext i1 @WindowShouldClose() #2
+  br i1 %6, label %7, label %2, !llvm.loop !3
 
-4:                                                ; preds = %2, %0
+7:                                                ; preds = %2, %0
   tail call void @CloseWindow() #2
   ret i32 0
 }
+
+declare dllimport void @SetConfigFlags(i32) local_unnamed_addr #1
 
 declare dllimport void @InitWindow(i32, i32, i8*) local_unnamed_addr #1
 
 declare dllimport void @SetTargetFPS(i32) local_unnamed_addr #1
 
 declare dllimport zeroext i1 @WindowShouldClose() local_unnamed_addr #1
+
+declare dllimport i32 @GetScreenWidth() local_unnamed_addr #1
+
+declare dllimport i32 @GetScreenHeight() local_unnamed_addr #1
 
 declare dllimport void @BeginDrawing() local_unnamed_addr #1
 

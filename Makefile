@@ -30,12 +30,10 @@ RAYLIB_INCLUDE = $(VCPKG_PATH)/include
 CFLAGS = -I$(RAYLIB_INCLUDE) -O2
 LDFLAGS = -L$(VCPKG_PATH)/lib -lraylib
 
-# Source files
-SRC_FILES = $(wildcard *.c)
-TARGETS = $(SRC_FILES:.c=$(POSFIX))
+
 
 # Build rules
-all: $(TARGETS)
+all: main$(POSFIX) test_compile.ll
 
 %$(POSFIX): %.c
 	$(CLANG) $(CFLAGS) -o $@ $< $(RAYLIB_LIB) $(LDFLAGS)
@@ -63,6 +61,8 @@ test_compile.ll: test_compile.c
 	$(CLANG) $(CFLAGS) test_compile.c $(RAYLIB_LIB) -S -emit-llvm
 
 clean:
-	$(DEL_CMD) $(TARGETS)
+	$(DEL_CMD) test_compile.ll
+	$(DEL_CMD) main$(POSFIX)
+	$(DEL_CMD) test_compile$(POSFIX)
 
 .PHONY: all clean run test_compile
