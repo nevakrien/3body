@@ -45,8 +45,8 @@ declare float @llvm.sqrt.f32(float) nounwind readonly
 define internal void @UpdateSpeeds([6 x float]* noalias align 16 %speeds, [6 x float]* noalias align 16 %positions) nounwind alwaysinline {
   entry:
     ; Initialize the loop
-    %scale_constant = fdiv float 100.0,8.0
-    %skip_epsilon = fdiv float %scale_constant, 10.0
+    %scale_constant = fdiv float 1000.0,8.0
+    %skip_epsilon = fdiv float %scale_constant, 100.0
     br label %outer_loop
 
   outer_loop:
@@ -194,8 +194,8 @@ entry:
   
   store float 160.0, float* %ptr0
   store float 160.0, float* %ptr1
-  store float 10.0, float* %ptr2
-  store float 4.0, float* %ptr3
+  store float 100.0, float* %ptr2
+  store float -40.0, float* %ptr3
   store float 0.0, float* %ptr4
   store float 0.0, float* %ptr5
 
