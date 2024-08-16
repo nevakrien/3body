@@ -27,7 +27,7 @@ RAYLIB_LIB = $(VCPKG_PATH)/lib/raylib.lib
 RAYLIB_INCLUDE = $(VCPKG_PATH)/include
 
 # Flags
-CFLAGS = -I$(RAYLIB_INCLUDE) -O2 #-fsantize=address -fsantize=undefined 
+CFLAGS = -I$(RAYLIB_INCLUDE) -O2 #-march=native#-fsantize=address -fsantize=undefined 
 LDFLAGS = -L$(VCPKG_PATH)/lib -lraylib
 
 
@@ -46,7 +46,12 @@ run: main$(POSFIX)
 
 # Build rule for test_compile
 main$(POSFIX): main.ll
+	make clean
 	$(CLANG) $(CFLAGS) -o main$(POSFIX) main.ll $(RAYLIB_LIB) $(LDFLAGS)
+
+# Build rule for test_compile
+main.s: main.ll
+	$(CLANG) $(CFLAGS) -o main.s -S -masm=intel main.ll $(RAYLIB_LIB) $(LDFLAGS)
 
 # Compile and run test_compile.c
 test_compile: test_compile$(POSFIX)
@@ -63,6 +68,7 @@ test_compile.ll: test_compile.c
 clean:
 	$(DEL_CMD) test_compile.ll
 	$(DEL_CMD) main$(POSFIX)
+	$(DEL_CMD) main.s
 	$(DEL_CMD) test_compile$(POSFIX)
 
 .PHONY: all clean run test_compile

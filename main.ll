@@ -14,7 +14,7 @@ loop:
   ; Loop index for accessing elements
   %index = phi i32 [ 0, %entry ], [ %next_index, %loop ]
   %y_index = add i32 %index, 1
-  
+
 
   ; Get pointers to the current X and Y floats in the buffer
   %x_ptr = getelementptr inbounds [6 x float], [6 x float]* %buffer, i32 0, i32 %index
@@ -41,7 +41,25 @@ exit:
   ret void
 }
 
-define internal void @UpdateState([6 x float]* %in_buffer, [6 x float]* %out_buffer) alwaysinline {
+;chatgpt
+define internal float @rsqrt(float %x) nounwind alwaysinline {
+entry:
+  ; Calculate the square root
+  %sqrt = call float @llvm.sqrt.f32(float %x)
+  ; Calculate the reciprocal of the square root
+  %result = fdiv float 1.0, %sqrt
+  ret float %result
+}
+
+; Declaration for the sqrt intrinsic
+declare float @llvm.sqrt.f32(float) nounwind readonly
+define internal void @UpdateSpeeds([6 x float]* noalias align 16 %speeds, [6 x float]* noalias align 16 %positions, float %delta_time) nounwind alwaysinline {
+  ret void
+}
+
+
+define internal void @UpdateState([6 x float]* noalias align 16 %in_buffer, [6 x float]* noalias align 16 %out_buffer, [6 x float]* noalias align 16 %speeds) nounwind alwaysinline {
+;alwaysinline {
 entry:
   ; Initialize the loop
   br label %loop
@@ -55,16 +73,26 @@ loop:
   %x_in_ptr = getelementptr inbounds [6 x float], [6 x float]* %in_buffer, i32 0, i32 %index
   %y_in_ptr = getelementptr inbounds [6 x float], [6 x float]* %in_buffer, i32 0, i32 %y_index
 
+  %x_speed_ptr = getelementptr inbounds [6 x float], [6 x float]* %speeds, i32 0, i32 %index
+  %y_speed_ptr = getelementptr inbounds [6 x float], [6 x float]* %speeds, i32 0, i32 %y_index
+
   ; Load the X and Y values
   %x_val = load float, float* %x_in_ptr, align 4
   %y_val = load float, float* %y_in_ptr, align 4
+
+  %x_speed = load float, float* %x_speed_ptr, align 4
+  %y_speed = load float, float* %y_speed_ptr, align 4
+
+
+  %new_x = fadd float %x_val, %x_speed
+  %new_y = fadd float %y_val, %y_speed
 
   ; Get pointers to the current X and Y floats in the buffer
   %x_out_ptr = getelementptr inbounds [6 x float], [6 x float]* %out_buffer, i32 0, i32 %index
   %y_out_ptr = getelementptr inbounds [6 x float], [6 x float]* %out_buffer, i32 0, i32 %y_index
   
-  store float %x_val, float* %x_out_ptr, align 4
-  store float %y_val, float* %y_out_ptr, align 4
+  store float %new_x, float* %x_out_ptr, align 4
+  store float %new_y, float* %y_out_ptr, align 4
 
 
   %next_index = add i32 %index, 2
@@ -73,6 +101,7 @@ loop:
   br i1 %continue, label %loop, label %exit
 
 exit:
+  tail call void @UpdateSpeeds([6 x float]* align 16 %speeds,[6 x float]* align 16 %out_buffer,float 1.0)
   ret void
 }
 
@@ -80,8 +109,9 @@ exit:
 define dso_local i32 @main() local_unnamed_addr #0 {
 entry:
   ;initilize base data
-  %work_buffer = alloca [6 x float] ,align 4
-  %bodies_data  = alloca [6 x float] ,align 4
+  %work_buffer = alloca [6 x float] ,align 16
+  %bodies_data  = alloca [6 x float] ,align 16
+  %speed_data  = alloca [6 x float] ,align 16
   
   %ptr0 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 0
   %ptr1 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 1
@@ -96,6 +126,21 @@ entry:
   store float 4.0, float* %ptr3
   store float 0.0, float* %ptr4
   store float 0.0, float* %ptr5
+
+  %sptr0 = getelementptr [6 x float], [6 x float]* %speed_data, i32 0, i32 0
+  %sptr1 = getelementptr [6 x float], [6 x float]* %speed_data, i32 0, i32 1
+  %sptr2 = getelementptr [6 x float], [6 x float]* %speed_data, i32 0, i32 2
+  %sptr3 = getelementptr [6 x float], [6 x float]* %speed_data, i32 0, i32 3
+  %sptr4 = getelementptr [6 x float], [6 x float]* %speed_data, i32 0, i32 4
+  %sptr5 = getelementptr [6 x float], [6 x float]* %speed_data, i32 0, i32 5
+  
+  store float 1.0, float* %sptr0
+  store float -1.0, float* %sptr1
+  store float 1.0, float* %sptr2
+  store float 1.0, float* %sptr3
+  store float 0.0, float* %sptr4
+  store float 0.0, float* %sptr5
+
 
   
 
@@ -130,7 +175,7 @@ entry:
   ; Initialize window
   tail call void @SetConfigFlags(i32 4) #2
   tail call void @InitWindow(i32 800, i32 450, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @window_name, i64 0, i64 0)) #2
-  tail call void @SetTargetFPS(i32 10) #2
+  tail call void @SetTargetFPS(i32 60) #2
   br label %main_loop
 
 main_loop:                                                ; preds = %0, %2
@@ -191,7 +236,7 @@ main_loop:                                                ; preds = %0, %2
   call void @EndMode2D() #3
   tail call void @EndDrawing() #2
 
-  tail call void @UpdateState([6 x float]* %current_data,[6 x float]* %next_buffer)
+  tail call void @UpdateState([6 x float]* %current_data,[6 x float]* %next_buffer,[6 x float]* %speed_data)
 
   %should_close = tail call zeroext i1 @WindowShouldClose() #2
   br i1 %should_close, label %exit, label %main_loop, !llvm.loop !3

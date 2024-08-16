@@ -41,6 +41,9 @@ int main(void)
 
         // Draw objects using the camera's position
         DrawCircle(currentScreenWidth / 5, 120, 35, RED);
+        // DrawCircle(currentScreenWidth / 5, 100, 32, BLACK);
+        // DrawCircle(currentScreenWidth / 5, 200, 69, BLUE);
+
         DrawText("Congrats! You compiled and ran a Raylib program!", 190, 200, 20, LIGHTGRAY);
 
         // End the 2D camera mode
