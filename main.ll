@@ -41,20 +41,92 @@ exit:
   ret void
 }
 
-;chatgpt
-define internal float @rsqrt(float %x) nounwind alwaysinline {
-entry:
-  ; Calculate the square root
-  %sqrt = call float @llvm.sqrt.f32(float %x)
-  ; Calculate the reciprocal of the square root
-  %result = fdiv float 1.0, %sqrt
-  ret float %result
-}
-
-; Declaration for the sqrt intrinsic
 declare float @llvm.sqrt.f32(float) nounwind readonly
-define internal void @UpdateSpeeds([6 x float]* noalias align 16 %speeds, [6 x float]* noalias align 16 %positions, float %delta_time) nounwind alwaysinline {
-  ret void
+define internal void @UpdateSpeeds([6 x float]* noalias align 16 %speeds, [6 x float]* noalias align 16 %positions) nounwind alwaysinline {
+  entry:
+    ; Initialize the loop
+    %scale_constant = fdiv float 100.0,8.0
+    %skip_epsilon = fdiv float %scale_constant, 10.0
+    br label %outer_loop
+
+  outer_loop:
+    %index = phi i32 [ 0, %entry ], [ %next_index, %end_inner ] ;,[ %next_index, %inner_loop]
+    %y_index = add i32 %index, 1
+    %next_index = add i32 %index, 2
+
+    %x_ptr = getelementptr inbounds [6 x float], [6 x float]* %positions, i32 0, i32 %index
+    %y_ptr = getelementptr inbounds [6 x float], [6 x float]* %positions, i32 0, i32 %y_index
+    %x_float = load float, float* %x_ptr, align 4
+    %y_float = load float, float* %y_ptr, align 4
+
+    %x_speed_ptr = getelementptr inbounds [6 x float], [6 x float]* %speeds, i32 0, i32 %index
+    %y_speed_ptr = getelementptr inbounds [6 x float], [6 x float]* %speeds, i32 0, i32 %y_index
+    %x_speed_float = load float, float* %x_speed_ptr, align 4
+    %y_speed_float = load float, float* %y_speed_ptr, align 4
+
+    br label %inner_loop
+
+  inner_loop:
+    %other_index = phi i32 [%next_index,%outer_loop] , [%next_other_index,%inner_first],[%next_other_index,%inner_second]
+    %other_y = add i32 %other_index, 1
+    %next_other_index = add i32 %other_index, 2
+
+    %continue = icmp slt i32 %other_index, 6
+    br i1 %continue, label %inner_first, label %end_inner
+
+  inner_first:
+    ;boring setup
+    %x_other_ptr = getelementptr inbounds [6 x float], [6 x float]* %positions, i32 0, i32 %other_index
+    %y_other_ptr = getelementptr inbounds [6 x float], [6 x float]* %positions, i32 0, i32 %other_y
+    %x_other_float = load float, float* %x_other_ptr, align 4
+    %y_other_float = load float, float* %y_other_ptr, align 4
+
+    %x_other_speed_ptr = getelementptr inbounds [6 x float], [6 x float]* %speeds, i32 0, i32 %other_index
+    %y_other_speed_ptr = getelementptr inbounds [6 x float], [6 x float]* %speeds, i32 0, i32 %other_y
+    %x_other_speed_float = load float, float* %x_other_speed_ptr, align 4
+    %y_other_speed_float = load float, float* %y_other_speed_ptr, align 4
+
+    ;distance stuff
+    %dx = fsub float %x_float, %x_other_float
+    %dy = fsub float %y_float, %y_other_float
+
+    %dx2 = fmul float %dx,%dx
+    %dy2 = fmul float %dy,%dy
+
+    %r2 = fadd float %dx2, %dy2
+    %too_small = fcmp olt float %r2, %skip_epsilon
+    br i1 %too_small, label %inner_loop, label %inner_second
+  
+  inner_second:    
+    %inv_r2 = fdiv float 1.0, %r2
+    %inv_r = call float @llvm.sqrt.f32(float %inv_r2)
+
+    %inv_r3 = fmul float %inv_r,  %inv_r2
+    %vscale = fmul float %scale_constant,  %inv_r3
+
+    %sx = fmul float %dx, %vscale
+    %sy = fmul float %dy, %vscale
+
+    %new_speed_x = fsub float %x_speed_float, %sx
+    %new_speed_y = fsub float %y_speed_float, %sy
+    
+    store float %new_speed_x, float* %x_speed_ptr, align 4
+    store float %new_speed_y, float* %y_speed_ptr, align 4
+
+    %new_other_speed_x = fadd float %x_other_speed_float, %sx
+    %new_other_speed_y = fadd float %y_other_speed_float, %sy
+
+    store float %new_other_speed_x, float* %x_other_speed_ptr, align 4
+    store float %new_other_speed_y, float* %y_other_speed_ptr, align 4
+
+    br label %inner_loop
+
+  end_inner:
+    %continue_outer = icmp slt i32 %next_index, 4
+    br i1 %continue_outer, label %outer_loop, label %exit
+
+  exit:
+    ret void
 }
 
 
@@ -101,7 +173,7 @@ loop:
   br i1 %continue, label %loop, label %exit
 
 exit:
-  tail call void @UpdateSpeeds([6 x float]* align 16 %speeds,[6 x float]* align 16 %out_buffer,float 1.0)
+  tail call void @UpdateSpeeds([6 x float]* align 16 %speeds,[6 x float]* align 16 %out_buffer)
   ret void
 }
 
