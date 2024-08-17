@@ -46,7 +46,7 @@ define internal void @UpdateSpeeds([6 x float]* noalias align 16 %speeds, [6 x f
   entry:
     ; Initialize the loop
     %scale_constant = fdiv float 2000.0,8.0
-    %skip_epsilon = fdiv float %scale_constant, 100.0
+    %skip_epsilon = fdiv float %scale_constant, 1.5
     br label %outer_loop
 
   outer_loop:
@@ -191,11 +191,11 @@ entry:
   %ptr4 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 4
   %ptr5 = getelementptr [6 x float], [6 x float]* %bodies_data, i32 0, i32 5
   
-  store float 160.0, float* %ptr0
-  store float 160.0, float* %ptr1
-  store float 100.0, float* %ptr2
-  store float -40.0, float* %ptr3
-  store float 0.0, float* %ptr4
+  store float 130.0, float* %ptr0
+  store float 70.0, float* %ptr1
+  store float 10.0, float* %ptr2
+  store float -140.0, float* %ptr3
+  store float -60.0, float* %ptr4
   store float 0.0, float* %ptr5
 
   %sptr0 = getelementptr [6 x float], [6 x float]* %speed_data, i32 0, i32 0
@@ -205,12 +205,12 @@ entry:
   %sptr4 = getelementptr [6 x float], [6 x float]* %speed_data, i32 0, i32 4
   %sptr5 = getelementptr [6 x float], [6 x float]* %speed_data, i32 0, i32 5
   
-  store float 1.5, float* %sptr0
+  store float 1.75, float* %sptr0
   store float -0.5, float* %sptr1
-  store float 1.0, float* %sptr2
+  store float 0.75, float* %sptr2
   store float 1.0, float* %sptr3
-  store float 0.0, float* %sptr4
-  store float 0.0, float* %sptr5
+  store float -0.25, float* %sptr4
+  store float 0.25, float* %sptr5
 
 
   
