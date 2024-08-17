@@ -46,11 +46,11 @@ define internal void @UpdateSpeeds([6 x float]* noalias align 16 %speeds, [6 x f
   entry:
     ; Initialize the loop
     %scale_constant = fdiv float 2000.0,8.0
-    %skip_epsilon = fdiv float %scale_constant, 1000.0
+    %skip_epsilon = fdiv float %scale_constant, 100.0
     br label %outer_loop
 
   outer_loop:
-    %index = phi i32 [ 0, %entry ], [ %next_index, %end_inner ] ;,[ %next_index, %inner_loop]
+    %index = phi i32 [ 0, %entry ], [ %next_index, %end_inner ] 
     %y_index = add i32 %index, 1
     %next_index = add i32 %index, 2
 
@@ -67,14 +67,14 @@ define internal void @UpdateSpeeds([6 x float]* noalias align 16 %speeds, [6 x f
     br label %inner_loop
 
   inner_loop:
-    %other_index = phi i32 [%next_index,%outer_loop] , [%next_other_index,%inner_first],[%next_other_index,%inner_second]
+    %other_index = phi i32 [%next_index,%outer_loop] , [%next_other_index,%inner_core]
     %other_y = add i32 %other_index, 1
     %next_other_index = add i32 %other_index, 2
 
     %continue = icmp slt i32 %other_index, 6
-    br i1 %continue, label %inner_first, label %end_inner
+    br i1 %continue, label %inner_core, label %end_inner
 
-  inner_first:
+  inner_core:
     ;boring setup
     %x_other_ptr = getelementptr inbounds [6 x float], [6 x float]* %positions, i32 0, i32 %other_index
     %y_other_ptr = getelementptr inbounds [6 x float], [6 x float]* %positions, i32 0, i32 %other_y
@@ -93,11 +93,10 @@ define internal void @UpdateSpeeds([6 x float]* noalias align 16 %speeds, [6 x f
     %dx2 = fmul float %dx,%dx
     %dy2 = fmul float %dy,%dy
 
-    %r2 = fadd float %dx2, %dy2
-    %too_small = fcmp olt float %r2, %skip_epsilon
-    br i1 %too_small, label %inner_loop, label %inner_second
-  
-  inner_second:    
+    %raw_r2 = fadd float %dx2, %dy2
+    %too_small = fcmp olt float %raw_r2, %skip_epsilon
+    %r2 = select i1 %too_small ,float %skip_epsilon, float %raw_r2
+
     %inv_r2 = fdiv float 1.0, %r2
     %inv_r = call float @llvm.sqrt.f32(float %inv_r2)
 
